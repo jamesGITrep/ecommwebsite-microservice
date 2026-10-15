@@ -1,0 +1,28 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model ProductReview {
+  id        String   @id @default(uuid())
+  productId String   // Stored as string, relates to catalog_db Product
+  userId    String   // Stored as string, relates to customer_db User
+  rating    Int
+  title     String?
+  comment   String?
+  photoUrl  String?
+  createdAt DateTime @default(now())
+}
+
+model DiscountCoupon {
+  id            String   @id @default(uuid())
+  code          String   @unique
+  discountType  String   // PERCENTAGE, FIXED_AMOUNT, BOGO
+  discountValue Float
+  validFrom     DateTime
+  validUntil    DateTime?
+  isActive      Boolean  @default(true)
+}

@@ -1,0 +1,121 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: james
+      POSTGRES_DB: ecommerce_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init-dbs.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  api-gateway:
+    build: ./api-gateway
+    container_name: api-gateway
+    ports:
+      - "4000:4000"
+    environment:
+      - CATALOG_URL=http://catalog-service:4001
+      - ORDER_URL=http://order-service:4002
+      - CUSTOMER_URL=http://customer-service:4003
+      - MARKETING_URL=http://marketing-service:4004
+      - PAYMENT_URL=http://payment-service:4005
+      - FRONTEND_PRODUCTS_URL=http://frontend-products:3000
+      - FRONTEND_SEARCH_URL=http://frontend-search:3000
+      - FRONTEND_CART_URL=http://frontend-cart:3000
+      - FRONTEND_PAYMENT_URL=http://frontend-payment:3000
+    depends_on:
+      - catalog-service
+      - order-service
+      - customer-service
+      - marketing-service
+      - payment-service
+
+  catalog-service:
+    build: ./catalog-service
+    container_name: catalog-service
+    ports:
+      - "4001:4001"
+    environment:
+      - DATABASE_URL=postgresql://postgres:james@postgres:5432/catalog_db?schema=public
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  order-service:
+    build: ./order-service
+    container_name: order-service
+    ports:
+      - "4002:4002"
+    environment:
+      - DATABASE_URL=postgresql://postgres:james@postgres:5432/order_db?schema=public
+      - CATALOG_URL=http://catalog-service:4001
+      - PAYMENT_URL=http://payment-service:4005
+    depends_on:
+      postgres:
+        condition: service_healthy
+      catalog-service:
+        condition: service_started
+      payment-service:
+        condition: service_started
+
+  customer-service:
+    build: ./customer-service
+    container_name: customer-service
+    ports:
+      - "4003:4003"
+    environment:
+      - DATABASE_URL=postgresql://postgres:james@postgres:5432/customer_db?schema=public
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  marketing-service:
+    build: ./marketing-service
+    container_name: marketing-service
+    ports:
+      - "4004:4004"
+    environment:
+      - DATABASE_URL=postgresql://postgres:james@postgres:5432/marketing_db?schema=public
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  payment-service:
+    build: ./payment-service
+    container_name: payment-service
+    ports:
+      - "4005:4005"
+    environment:
+      - DATABASE_URL=postgresql://postgres:james@postgres:5432/payment_db?schema=public
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend-products:
+    build: ./frontend-products
+    container_name: frontend-products
+
+  frontend-search:
+    build: ./frontend-search
+    container_name: frontend-search
+
+  frontend-cart:
+    build: ./frontend-cart
+    container_name: frontend-cart
+
+  frontend-payment:
+    build: ./frontend-payment
+    container_name: frontend-payment
+
+volumes:
+  pgdata:

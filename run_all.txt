@@ -1,0 +1,23 @@
+@echo off
+echo Cleaning up unused lockfiles to prevent Next.js warnings...
+if exist "%USERPROFILE%\package-lock.json" del /q /f "%USERPROFILE%\package-lock.json"
+
+echo Starting all microservices and the frontend...
+
+start "Catalog Service" cmd /k "cd catalog-service && npx -y tsx index.ts"
+start "Order Service" cmd /k "cd order-service && npx -y tsx index.ts"
+start "Customer Service" cmd /k "cd customer-service && npx -y tsx index.ts"
+start "Marketing Service" cmd /k "cd marketing-service && npx -y tsx index.ts"
+
+echo Waiting for backend services to initialize...
+timeout /t 3 /nobreak > nul
+
+start "API Gateway" cmd /k "cd api-gateway && npx -y tsx index.ts"
+
+echo Waiting for API Gateway to initialize...
+timeout /t 3 /nobreak > nul
+
+start "Frontend" cmd /k "cd E-Com Website && npm run dev"
+
+echo All components have been started in separate windows!
+pause

@@ -1,0 +1,44 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Cart {
+  id        String     @id @default(uuid())
+  userId    String?    // Stored as string, relates to customer_db User
+  sessionId String?    // For guest checkout carts
+  updatedAt DateTime   @updatedAt
+  items     CartItem[]
+}
+
+model CartItem {
+  id        String   @id @default(uuid())
+  cartId    String
+  cart      Cart     @relation(fields: [cartId], references: [id])
+  variantId String   // Stored as string, relates to catalog_db ProductVariant
+  quantity  Int
+}
+
+model Order {
+  id              String      @id @default(uuid())
+  userId          String?     // Stored as string, relates to customer_db User
+  status          String      @default("PENDING") // PENDING, PAID, SHIPPED
+  total           Float
+  shippingAddress Json
+  tax             Float
+  shippingCost    Float
+  createdAt       DateTime    @default(now())
+  items           OrderItem[]
+}
+
+model OrderItem {
+  id        String   @id @default(uuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id])
+  variantId String   // Stored as string, relates to catalog_db ProductVariant
+  quantity  Int
+  price     Float
+}
